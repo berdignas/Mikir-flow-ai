@@ -1,0 +1,56 @@
+{
+  "info": {
+    "name": "Mikir Flow AI Postman Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Projects",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "apikey", "value": "sb_publishable_TebOyhH3GFDaZj5BzxEh2Q_s6pnCCLH" },
+          { "key": "Authorization", "value": "Bearer sb_publishable_TebOyhH3GFDaZj5BzxEh2Q_s6pnCCLH" }
+        ],
+        "url": {
+          "raw": "https://sshfcmkqjszuajdredxa.supabase.co/rest/v1/projects?select=*",
+          "protocol": "https",
+          "host": ["sshfcmkqjszuajdredxa", "supabase", "co"],
+          "path": ["rest", "v1", "projects"]
+        }
+      }
+    },
+    {
+      "name": "Get Flow Nodes",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "apikey", "value": "sb_publishable_TebOyhH3GFDaZj5BzxEh2Q_s6pnCCLH" },
+          { "key": "Authorization", "value": "Bearer sb_publishable_TebOyhH3GFDaZj5BzxEh2Q_s6pnCCLH" }
+        ],
+        "url": {
+          "raw": "https://sshfcmkqjszuajdredxa.supabase.co/rest/v1/flow_nodes?select=*",
+          "protocol": "https",
+          "host": ["sshfcmkqjszuajdredxa", "supabase", "co"],
+          "path": ["rest", "v1", "flow_nodes"]
+        }
+      }
+    },
+    {
+      "name": "Get Discussions",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "apikey", "value": "sb_publishable_TebOyhH3GFDaZj5BzxEh2Q_s6pnCCLH" },
+          { "key": "Authorization", "value": "Bearer sb_publishable_TebOyhH3GFDaZj5BzxEh2Q_s6pnCCLH" }
+        ],
+        "url": {
+          "raw": "https://sshfcmkqjszuajdredxa.supabase.co/rest/v1/discussions?select=*",
+          "protocol": "https",
+          "host": ["sshfcmkqjszuajdredxa", "supabase", "co"],
+          "path": ["rest", "v1", "discussions"]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-primary: #FF6B4D;
+  --color-success: #10B981;
+  --color-error: #EF4444;
+  --color-background-canvas: #F5F5F5;
+  --color-canvas-dots: #D1D5DB;
+  --color-surface: #FFFFFF;
+  --color-text-primary: #0A0A0A;
+  --color-text-secondary: #6B7280;
+  --color-border: #E5E7EB;
+  --color-badge-orange-bg: #FFEDD5;
+  --color-badge-orange-text: #EA580C;
+
+  --font-inter: var(--font-inter), "Inter", sans-serif;
+}
+
+body {
+  background-color: var(--color-background-canvas);
+  color: var(--color-text-primary);
+  font-family: var(--font-inter);
+}
+
+/* Typography styles based on design.md */
+.font-node-title {
+  font-family: var(--font-inter), "Inter", sans-serif;
+  font-size: 0.875rem; /* 14px */
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.font-node-subtitle {
+  font-family: var(--font-inter), "Inter", sans-serif;
+  font-size: 0.75rem; /* 12px */
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+.font-label-sm {
+  font-family: var(--font-inter), "Inter", sans-serif;
+  font-size: 0.625rem; /* 10px */
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+/* Prevent unwanted I-beam text cursor caret on non-input elements */
+body, h1, h2, h3, h4, h5, h6, p, span, div, a, button, label, svg, img {
+  user-select: none;
+  -webkit-user-select: none;
+  caret-color: transparent;
+}
+
+/* Allow normal text selection & cursor caret only in form input elements */
+input, textarea, [contenteditable="true"] {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  caret-color: auto !important;
+}

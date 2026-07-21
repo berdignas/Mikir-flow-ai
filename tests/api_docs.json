@@ -1,0 +1,127 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Mikir Flow AI - Supabase Backend API",
+    "version": "1.0.0",
+    "description": "API endpoints untuk sinkronisasi proyek, nodes diagram, edges, dan feedback diskusi."
+  },
+  "servers": [
+    {
+      "url": "https://sshfcmkqjszuajdredxa.supabase.co/rest/v1",
+      "description": "Live Supabase Database REST API"
+    }
+  ],
+  "paths": {
+    "/projects": {
+      "get": {
+        "summary": "Mendapatkan daftar proyek",
+        "parameters": [
+          {
+            "name": "select",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "*"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array data proyek"
+          }
+        }
+      }
+    },
+    "/flow_nodes": {
+      "get": {
+        "summary": "Mendapatkan semua node flow diagram",
+        "parameters": [
+          {
+            "name": "select",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "*"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array node diagram"
+          }
+        }
+      },
+      "post": {
+        "summary": "Membuat atau memperbarui node diagram",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "project_id": { "type": "string" },
+                  "title": { "type": "string" },
+                  "node_type": { "type": "string" },
+                  "data": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Node berhasil dibuat/diperbarui"
+          }
+        }
+      }
+    },
+    "/flow_edges": {
+      "get": {
+        "summary": "Mendapatkan semua garis koneksi edge",
+        "responses": {
+          "200": {
+            "description": "Array edge diagram"
+          }
+        }
+      }
+    },
+    "/discussions": {
+      "get": {
+        "summary": "Mendapatkan daftar feedback diskusi tim",
+        "responses": {
+          "200": {
+            "description": "Array masukan tim"
+          }
+        }
+      },
+      "post": {
+        "summary": "Mengirim feedback tim baru",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "node_id": { "type": "string" },
+                  "user_name": { "type": "string" },
+                  "user_role": { "type": "string" },
+                  "comment": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Feedback berhasil dikirim"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,43 @@
+openapi: 3.0.0
+info:
+  title: Mikir Flow AI API
+  version: 1.0.0
+  description: Supabase REST API Docs for Mikir Flow AI application
+servers:
+  - url: https://sshfcmkqjszuajdredxa.supabase.co/rest/v1
+    description: Supabase REST Base URL
+paths:
+  /projects:
+    get:
+      summary: Fetch projects
+      responses:
+        '200':
+          description: OK
+  /flow_nodes:
+    get:
+      summary: Fetch flow nodes
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Upsert flow node
+      responses:
+        '201':
+          description: Created
+  /flow_edges:
+    get:
+      summary: Fetch flow edges
+      responses:
+        '200':
+          description: OK
+  /discussions:
+    get:
+      summary: Fetch feedback discussions
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Add feedback discussion
+      responses:
+        '201':
+          description: Created

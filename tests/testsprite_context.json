@@ -1,0 +1,35 @@
+{
+  "project_name": "Mikir Flow AI",
+  "framework": "Next.js 16 (App Router)",
+  "testing_scope": "Frontend UI & API Handlers",
+  "base_url": "http://localhost:3000",
+  "routes": [
+    {
+      "path": "/",
+      "name": "Flow Diagram Canvas",
+      "features": ["React Flow Canvas", "Node Spec Edit", "Draft Saving", "Feedback Tab", "Module Approval"]
+    },
+    {
+      "path": "/prd",
+      "name": "PRD Document Viewer",
+      "features": ["PRD Document view", "Section Navigation"]
+    },
+    {
+      "path": "/task",
+      "name": "Developer Task Kanban Board",
+      "features": ["4 Columns: Started, On Going, Review Klien, Completed", "Drag and Drop Task Movement", "Assign Developer to Task", "Progress Bar"]
+    },
+    {
+      "path": "/users",
+      "name": "User Management",
+      "features": ["Role switching", "User list"]
+    }
+  ],
+  "api_routes": [
+    { "endpoint": "/api/prd", "methods": ["GET", "POST"] },
+    { "endpoint": "/api/role", "methods": ["GET", "POST"] },
+    { "endpoint": "/api/modules/[moduleId]", "methods": ["GET", "PUT"] },
+    { "endpoint": "/api/tasks/[taskId]", "methods": ["GET", "PUT", "DELETE"] },
+    { "endpoint": "/api/tasks/[taskId]/assignee", "methods": ["GET", "POST", "PUT"] }
+  ]
+}
