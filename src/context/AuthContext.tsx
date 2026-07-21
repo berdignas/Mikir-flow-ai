@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export type UserRole = 'pm' | 'developer' | 'client';
 
@@ -17,6 +17,7 @@ export interface UserAccount {
 interface AuthContextType {
   currentUser: UserAccount | null;
   usersList: UserAccount[];
+  isAuthLoaded: boolean;
   loginAs: (role: UserRole) => void;
   logout: () => void;
   addUser: (user: Omit<UserAccount, 'id'>) => void;
@@ -37,7 +38,23 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [usersList, setUsersList] = useState<UserAccount[]>(initialUsers);
-  const [currentUser, setCurrentUser] = useState<UserAccount | null>(initialUsers[0]); // Default PM
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
+  const [isAuthLoaded, setIsAuthLoaded] = useState<boolean>(false);
+
+  // Restore user session from localStorage on app startup
+  useEffect(() => {
+    try {
+      const savedUser = localStorage.getItem('mikirflow_session_user');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        setCurrentUser(parsed);
+      }
+    } catch (e) {
+      console.error('Failed to restore user session:', e);
+    } finally {
+      setIsAuthLoaded(true);
+    }
+  }, []);
 
   const loginAs = (role: UserRole) => {
     const userMatch = usersList.find((u) => u.role === role) || {
@@ -49,10 +66,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       assignedProjectIds: role === 'client' ? [DUMMY_PROJECT_ID] : undefined,
     };
     setCurrentUser(userMatch);
+    localStorage.setItem('mikirflow_session_user', JSON.stringify(userMatch));
   };
 
   const logout = () => {
     setCurrentUser(null);
+    localStorage.removeItem('mikirflow_session_user');
   };
 
   const addUser = (newUser: Omit<UserAccount, 'id'>) => {
@@ -72,7 +91,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       prev.map((u) => (u.id === id ? { ...u, role } : u))
     );
     if (currentUser?.id === id) {
-      setCurrentUser((prev) => (prev ? { ...prev, role } : null));
+      const updated = { ...currentUser, role };
+      setCurrentUser(updated);
+      localStorage.setItem('mikirflow_session_user', JSON.stringify(updated));
     }
   };
 
@@ -81,7 +102,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       prev.map((u) => (u.id === id ? { ...u, assignedProjectIds: projectIds } : u))
     );
     if (currentUser?.id === id) {
-      setCurrentUser((prev) => (prev ? { ...prev, assignedProjectIds: projectIds } : null));
+      const updated = { ...currentUser, assignedProjectIds: projectIds };
+      setCurrentUser(updated);
+      localStorage.setItem('mikirflow_session_user', JSON.stringify(updated));
     }
   };
 
@@ -90,6 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         currentUser,
         usersList,
+        isAuthLoaded,
         loginAs,
         logout,
         addUser,
