@@ -121,7 +121,7 @@ const initialProjects: ProjectItem[] = [
   },
 ];
 
-// Helper to parse PRD string to nodes & edges
+// Robust Parser to convert PRD Markdown strictly into Root Node -> Feature Nodes -> Sub-Feature Nodes
 function generateFlowFromPRDText(prdText: string) {
   if (!prdText || !prdText.trim()) {
     return { nodes: [], edges: [] };
@@ -129,32 +129,117 @@ function generateFlowFromPRDText(prdText: string) {
 
   const lines = prdText.split('\n');
   let title = 'Smart Application Flow';
-  const parsedFeatures: { title: string; items: string[] }[] = [];
-  let currentFeature: { title: string; items: string[] } | null = null;
+  let goal = '';
 
-  lines.forEach((line) => {
+  interface SubFeatureItem {
+    id: string;
+    title: string;
+    userStory: string;
+    acceptanceCriteria: string;
+    tasks: string[];
+    items: string[];
+  }
+
+  interface FeatureItem {
+    id: string;
+    title: string;
+    phase: string;
+    description: string;
+    subFeatures: SubFeatureItem[];
+  }
+
+  const features: FeatureItem[] = [];
+  let currentFeature: FeatureItem | null = null;
+  let currentSubFeature: SubFeatureItem | null = null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const trimmed = line.trim();
-    if (trimmed.toLowerCase().startsWith('judul:')) {
-      title = trimmed.replace(/judul:/i, '').trim();
-    } else if (trimmed.startsWith('# ROOT NODE:')) {
+    if (!trimmed) continue;
+
+    // 1. Root Node Parsing
+    if (trimmed.startsWith('# ROOT NODE:')) {
       title = trimmed.replace('# ROOT NODE:', '').trim();
-    } else if (/^\#\#\s*FEATURE:/i.test(trimmed) || /^\d+\.\s*fitur/i.test(trimmed) || /^\d+\.\s*/.test(trimmed)) {
-      if (currentFeature) parsedFeatures.push(currentFeature);
+    } else if (trimmed.toLowerCase().startsWith('judul:')) {
+      title = trimmed.replace(/judul:/i, '').trim();
+    } else if (trimmed.startsWith('**Tujuan Utama:**')) {
+      goal = trimmed.replace('**Tujuan Utama:**', '').trim();
+    } 
+    // 2. Feature Node (Modul Utama) Parsing - Match "## FEATURE:" or "## Modul"
+    else if (trimmed.startsWith('## FEATURE:') || (trimmed.startsWith('## ') && !trimmed.startsWith('###'))) {
+      if (currentSubFeature && currentFeature) {
+        currentFeature.subFeatures.push(currentSubFeature);
+        currentSubFeature = null;
+      }
+      if (currentFeature) {
+        features.push(currentFeature);
+      }
+
+      let rawTitle = trimmed.replace(/^##\s*(FEATURE:)?/i, '').trim();
+      let phase = 'FASE 1';
+      const phaseMatch = rawTitle.match(/\(Badge:\s*(FASE\s*\d+)\)/i);
+      if (phaseMatch) {
+        phase = phaseMatch[1].toUpperCase();
+        rawTitle = rawTitle.replace(/\(Badge:.*\)/i, '').trim();
+      }
+
       currentFeature = {
-        title: trimmed.replace(/^(\#\#\s*FEATURE:|\d+\.\s*(fitur utama:)?)\s*/i, '').replace(/\(Badge:.*\)/i, '').trim(),
+        id: `f_${features.length + 1}`,
+        title: rawTitle,
+        phase,
+        description: '',
+        subFeatures: [],
+      };
+    }
+    // 3. Sub-Feature Node Parsing - Match "### SUB-FEATURE:" or "### Fitur"
+    else if (trimmed.startsWith('### SUB-FEATURE:') || trimmed.startsWith('### ')) {
+      if (currentSubFeature && currentFeature) {
+        currentFeature.subFeatures.push(currentSubFeature);
+      }
+
+      const subTitle = trimmed.replace(/^###\s*(SUB-FEATURE:)?/i, '').trim();
+      currentSubFeature = {
+        id: `s_${currentFeature ? currentFeature.subFeatures.length + 1 : 1}`,
+        title: subTitle,
+        userStory: '',
+        acceptanceCriteria: '',
+        tasks: [],
         items: [],
       };
-    } else if (trimmed.startsWith('### SUB-FEATURE:') || trimmed.startsWith('-') || trimmed.startsWith('*')) {
-      if (currentFeature && (trimmed.startsWith('-') || trimmed.startsWith('*'))) {
-        currentFeature.items.push(trimmed.replace(/^[-*]\s*/, '').trim());
-      } else if (currentFeature && trimmed.startsWith('### SUB-FEATURE:')) {
-        currentFeature.items.push(trimmed.replace('### SUB-FEATURE:', '').trim());
-      }
     }
-  });
+    // 4. Sub-Feature Attributes (User Story, Acceptance Criteria, Developer Tasks)
+    else if (currentSubFeature) {
+      if (trimmed.startsWith('- **User Story:**') || trimmed.startsWith('* **User Story:**') || trimmed.startsWith('User Story:')) {
+        currentSubFeature.userStory = trimmed.replace(/^[-*]?\s*\*\*User Story:\*\*/i, '').replace(/User Story:/i, '').trim();
+      } else if (trimmed.startsWith('- **Deskripsi Modul:**') || trimmed.startsWith('**Deskripsi Modul:**')) {
+        if (currentFeature) currentFeature.description = trimmed.replace(/^[-*]?\s*\*\*Deskripsi Modul:\*\*/i, '').trim();
+      } else if (/^\d+\.\s*/.test(trimmed)) {
+        // Acceptance Criteria item
+        const criterion = trimmed.replace(/^\d+\.\s*/, '').trim();
+        if (currentSubFeature.acceptanceCriteria) {
+          currentSubFeature.acceptanceCriteria += '\n' + trimmed;
+        } else {
+          currentSubFeature.acceptanceCriteria = trimmed;
+        }
+        currentSubFeature.items.push(criterion);
+      } else if (trimmed.startsWith('- *Frontend:*') || trimmed.startsWith('- *Backend:*') || trimmed.startsWith('- *QA:*')) {
+        const taskText = trimmed.replace(/^[-*]\s*/, '').trim();
+        currentSubFeature.tasks.push(taskText);
+        currentSubFeature.items.push(taskText);
+      }
+    } else if (currentFeature && (trimmed.startsWith('**Deskripsi Modul:**') || trimmed.startsWith('- **Deskripsi Modul:**'))) {
+      currentFeature.description = trimmed.replace(/^[-*]?\s*\*\*Deskripsi Modul:\*\*/i, '').trim();
+    }
+  }
 
-  if (currentFeature) parsedFeatures.push(currentFeature);
+  if (currentSubFeature && currentFeature) {
+    currentFeature.subFeatures.push(currentSubFeature);
+  }
+  if (currentFeature) {
+    features.push(currentFeature);
+  }
 
+  // Generate Flow Diagram Architecture: Root (Column 1) -> Features (Column 2) -> Sub-Features (Column 3)
   const newNodes: Node<NodeData>[] = [];
   const newEdges: Edge[] = [];
 
@@ -163,25 +248,25 @@ function generateFlowFromPRDText(prdText: string) {
     id: rootId,
     type: 'rootNode',
     position: { x: 0, y: 0 },
-    data: { title, subtitle: 'Perencanaan Workspace' },
+    data: { title, subtitle: goal || 'Perencanaan Workspace System' },
   });
 
-  parsedFeatures.forEach((feat, idx) => {
-    const featId = `f_${idx + 1}`;
+  features.forEach((feat, fIdx) => {
+    const featId = `f_${fIdx + 1}`;
     newNodes.push({
       id: featId,
       type: 'featureNode',
       position: { x: 0, y: 0 },
       data: {
         title: feat.title,
-        phase: `FASE ${idx + 1}`,
+        phase: feat.phase || 'FASE 1',
         status: 'Selesai',
-        subtitle: 'Direncanakan',
-        goals: `Mengembangkan modul ${feat.title} untuk aplikasi`,
-        userStory: `Sebagai pengguna, saya ingin bisa menggunakan fitur ${feat.title} dengan cepat.`,
+        subtitle: feat.description || 'Modul Utama',
+        goals: feat.description,
       },
     });
 
+    // Connect Root -> Feature Node
     newEdges.push({
       id: `e-root-${featId}`,
       source: rootId,
@@ -190,18 +275,23 @@ function generateFlowFromPRDText(prdText: string) {
       style: { stroke: '#A1A1AA', strokeWidth: 1.5 },
     });
 
-    if (feat.items.length > 0) {
-      const subId = `s_${idx + 1}`;
+    // Sub-Features under this Feature Node
+    feat.subFeatures.forEach((sub, sIdx) => {
+      const subId = `s_${fIdx + 1}_${sIdx + 1}`;
       newNodes.push({
         id: subId,
         type: 'subfeatureNode',
         position: { x: 0, y: 0 },
         data: {
-          title: `SUB FITUR ${feat.title.toUpperCase()}`,
-          items: feat.items,
+          title: sub.title,
+          userStory: sub.userStory,
+          acceptanceCriteria: sub.acceptanceCriteria,
+          tasks: sub.tasks,
+          items: sub.items.length > 0 ? sub.items : [sub.userStory || 'Pengembangan fitur spesifik'],
         },
       });
 
+      // Connect Feature Node -> Sub-Feature Node
       newEdges.push({
         id: `e-${featId}-${subId}`,
         source: featId,
@@ -209,7 +299,7 @@ function generateFlowFromPRDText(prdText: string) {
         type: 'deletableEdge',
         style: { stroke: '#A1A1AA', strokeWidth: 1.5 },
       });
-    }
+    });
   });
 
   return { nodes: newNodes, edges: newEdges };
@@ -229,18 +319,19 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
 
   const activeProject = projectsList.find((p) => p.id === activeProjectId) || projectsList[0];
 
-  // Auto layout helper
+  // Professional DAGRE Auto-Layout with clean rank separation
   const autoLayout = useCallback(() => {
     setNodes((nds) => {
       if (!nds || nds.length === 0) return nds;
       const dagreGraph = new dagre.graphlib.Graph();
       dagreGraph.setDefaultEdgeLabel(() => ({}));
-      dagreGraph.setGraph({ rankdir: 'LR', ranksep: 100, nodesep: 40 });
+      dagreGraph.setGraph({ rankdir: 'LR', ranksep: 180, nodesep: 50 });
 
       nds.forEach((node) => {
-        let width = 280;
-        let height = 80;
-        if (node.type === 'subfeatureNode') height = 150;
+        let width = 320;
+        let height = 100;
+        if (node.type === 'subfeatureNode') height = 160;
+        if (node.type === 'rootNode') height = 90;
         dagreGraph.setNode(node.id, { width, height });
       });
 
