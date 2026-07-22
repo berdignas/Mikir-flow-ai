@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFlowContext } from '@/context/FlowContext';
 import { useAuthContext } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -13,7 +13,6 @@ import {
   Globe, 
   Clock, 
   Heart,
-  MessageSquare
 } from 'lucide-react';
 
 const SYSTEM_PROMPT_TEMPLATE = `[SYSTEM ROLE]
@@ -109,7 +108,7 @@ const sampleParsedPRD = `# ROOT NODE: E-Commerce Marketplace Platform
   1. Notifikasi webhook callback mengubah status pembayaran otomatis menjadi Selesai.`;
 
 export default function PRDPage() {
-  const { loadNodesFromPRD } = useFlowContext();
+  const { loadNodesFromPRD, activeProject, updateActiveProjectPRD } = useFlowContext();
   const { currentUser } = useAuthContext();
   const router = useRouter();
 
@@ -120,6 +119,18 @@ export default function PRDPage() {
   const [isOpenLangMenu, setIsOpenLangMenu] = useState(false);
 
   const isClient = currentUser?.role === 'client';
+
+  // Automatically update local PRD content state whenever active project changes
+  useEffect(() => {
+    if (activeProject && activeProject.prd_text !== undefined) {
+      setPrdContent(activeProject.prd_text);
+    }
+  }, [activeProject]);
+
+  const handleTextChange = (text: string) => {
+    setPrdContent(text);
+    updateActiveProjectPRD(text);
+  };
 
   const handleCopyPrompt = () => {
     navigator.clipboard.writeText(SYSTEM_PROMPT_TEMPLATE);
@@ -140,7 +151,7 @@ export default function PRDPage() {
 
   return (
     <div 
-      className="h-full w-full flex flex-col justify-between p-6 sm:p-10 overflow-y-auto font-sans"
+      className="h-full w-full flex flex-col justify-between p-6 sm:p-10 overflow-y-auto font-sans select-none"
       style={{
         backgroundColor: '#F5F5F5',
         backgroundImage: 'radial-gradient(#D1D5DB 1px, transparent 1px)',
@@ -161,7 +172,7 @@ export default function PRDPage() {
           </div>
         )}
 
-        {/* Hero Title Section with Mikir flow ai Branding */}
+        {/* Hero Title Section with Active Project Indicator */}
         <div className="text-center space-y-4">
           <div className="flex justify-center mb-2">
             <Logo size="large" />
@@ -170,6 +181,12 @@ export default function PRDPage() {
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#0A0A0A] tracking-tight">
             Mau mikir flow apa?
           </h1>
+
+          <div className="inline-block bg-orange-100/70 border border-orange-200 px-3 py-1 rounded-full">
+            <p className="text-xs font-bold text-[#EA580C]">
+              Proyek Aktif: {activeProject ? `${activeProject.title} (${activeProject.client_name})` : 'E-Commerce Marketplace'}
+            </p>
+          </div>
 
           <p className="text-[#6B7280] text-sm sm:text-base font-normal max-w-lg mx-auto flex flex-wrap items-center justify-center gap-2">
             <span>Ubah ide atau requirement proyek kamu menjadi peta alur arsitektur Node secara otomatis.</span>
@@ -202,7 +219,7 @@ export default function PRDPage() {
           <textarea
             disabled={isClient}
             value={prdContent}
-            onChange={(e) => setPrdContent(e.target.value)}
+            onChange={(e) => handleTextChange(e.target.value)}
             rows={7}
             className="w-full text-sm sm:text-base text-[#0A0A0A] placeholder-[#6B7280] border-none outline-none resize-none bg-transparent font-mono leading-relaxed"
             placeholder='Ketik atau tempelkan PRD requirement Anda di sini... (Contoh: "Aplikasi e-commerce marketplace dengan fitur login multi-role, katalog produk, dan payment gateway QRIS...")'
@@ -263,11 +280,11 @@ export default function PRDPage() {
         <div className="text-center">
           <button
             type="button"
-            onClick={() => setPrdContent(sampleParsedPRD)}
+            onClick={() => handleTextChange(sampleParsedPRD)}
             className="inline-flex items-center gap-1.5 text-xs font-medium text-[#6B7280] hover:text-[#0A0A0A] transition-colors cursor-pointer"
           >
             <Clock className="w-3.5 h-3.5 text-[#6B7280]" />
-            <span>Lihat PRD sebelumnya (Muat Sampel Proyek)</span>
+            <span>Muat Sampel Format PRD</span>
           </button>
         </div>
 
