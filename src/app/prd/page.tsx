@@ -13,58 +13,66 @@ import {
   Globe, 
   Clock, 
   Heart,
+  FileCode,
+  X
 } from 'lucide-react';
 
-const SYSTEM_PROMPT_TEMPLATE = `[SYSTEM ROLE]
-Kamu adalah seorang Senior Product Manager dan System Architect berpengalaman. Tugas utamamu adalah mengubah ide aplikasi atau deskripsi mentah dari user menjadi sebuah Product Requirements Document (PRD) yang terstruktur dan siap divisualisasikan ke dalam bentuk Mikir flow ai.
+const MASTER_PRD_CONVERTER_PROMPT = `[ROLE & GOAL]
+Kamu adalah Senior Technical Product Manager dan Lead System Architect di MikirFlow AI. 
+Tugas utamamu adalah mendistilasi & mengonversi dokumen/kebutuhan mentah dari Klien menjadi Product Requirements Document (PRD) berstruktur standar MikirFlow AI.
 
-[INPUT CONTEXT]
-Nama Aplikasi / Ide: {{NAMA_APLIKASI}}
-Deskripsi Singkat: {{DESKRIPSI_IDE_USER}}
+[RAW CLIENT INPUT / REQUIREMENTS]
+Silakan baca dokumen/catatan kebutuhan dari Klien di bawah ini:
+=== DOKUMEN KLIEN MULA ===
+{{PASTE_TEKS_PRD_ATAU_KEBUTUHAN_KLIEN_DI_SINI}}
+=== DOKUMEN KLIEN SELESAI ===
 
-[INSTRUCTION]
-Pecah ide aplikasi tersebut ke dalam arsitektur hierarki yang jelas. Output harus dikembalikan dalam format MARKDOWN yang sangat terstruktur, dengan mematuhi aturan hierarki berikut:
-1. Root Node (Sistem Utama)
-2. Feature Node (Modul Utama, lengkapi dengan estimasi Fase Pengerjaan)
-3. Sub-Feature Node (Fungsi Spesifik di dalam Modul)
-4. PRD Detail (User Story & Acceptance Criteria untuk masing-masing Sub-Feature)
-5. Developer Tasks (Rekomendasi WBS teknis)
+[ATURAN PENGONVERSIAN]
+1. Identifikasi Nama Sistem Utama dan jadikan sebagai '# ROOT NODE: [Nama Sistem]'.
+2. Kelompokkan kebutuhan klien ke dalam minimal 3 hingga 5 Modul Utama ('## FEATURE: [Nama Modul] (Badge: FASE 1)').
+3. Di dalam setiap Modul Utama, uraikan 2 hingga 4 Sub-Fitur teknis ('### SUB-FEATURE: [Nama Sub-Fitur]').
+4. Untuk setiap Sub-Feature, tuliskan:
+   - User Story (Format: "Sebagai [pengguna], saya ingin [tindakan] agar [manfaat].")
+   - Acceptance Criteria (Kriteria penerimaan 1, 2, 3)
+   - Developer Tasks (Tugas Frontend, Backend, QA)
 
-[OUTPUT FORMAT REQUIREMENT]
-Gunakan template persis seperti di bawah ini untuk setiap output. Jangan menambahkan teks pengantar atau penutup di luar format ini.
+[FORMAT OUTPUT WAJIB]
+Hasilkan output persis mengikuti struktur Markdown di bawah ini tanpa teks pembuka atau penutup lain:
 
-# ROOT NODE: [Nama Sistem Utama]
-**Tujuan Utama:** [1-2 kalimat ringkasan value proposition aplikasi]
+# ROOT NODE: [Nama Aplikasi / Sistem Utama]
+**Tujuan Utama:** [Ringkasan value proposition aplikasi 1-2 kalimat]
 
 ## FEATURE: [Nama Modul Utama 1] (Badge: FASE 1)
-**Deskripsi Modul:** [Penjelasan singkat modul]
+**Deskripsi Modul:** [Penjelasan modul singkat]
 
 ### SUB-FEATURE: [Nama Sub-Fitur 1.1]
-- **User Story:** Sebagai [aktor], saya ingin [aksi] agar [hasil/manfaat].
+- **User Story:** Sebagai [aktor], saya ingin [aksi] agar [hasil].
 - **Acceptance Criteria:**
   1. [Kriteria 1]
   2. [Kriteria 2]
 - **Developer Tasks:**
-  - *Frontend:* [Task UI/UX atau integrasi]
-  - *Backend:* [Task API, Database, atau Logic]
-  - *QA:* [Skenario testing utama]
+  - *Frontend:* [UI Component / Page]
+  - *Backend:* [API Endpoint / DB Logic]
+  - *QA:* [Skenario Pengujian]
 
 ### SUB-FEATURE: [Nama Sub-Fitur 1.2]
-- **User Story:** [Bentuk User Story]
+- **User Story:** [User Story]
 - **Acceptance Criteria:**
   1. [Kriteria 1]
 - **Developer Tasks:**
   - *Frontend:* [Task]
   - *Backend:* [Task]
 
-## FEATURE: [Nama Modul Utama 2] (Badge: FASE 1 / FASE 2)
-[Lanjutkan pola hierarki yang sama untuk Modul 2, Modul 3, dst...]
+## FEATURE: [Nama Modul Utama 2] (Badge: FASE 1)
+**Deskripsi Modul:** [Penjelasan modul]
 
-[CONSTRAINTS & RULES TO NEVER BREAK]
-- Pecah sistem minimal menjadi 3 Modul Utama (Feature) agar Mikir flow ai terlihat komprehensif.
-- Batasi setiap Modul Utama maksimal memiliki 4 Sub-Fitur agar kanvas tidak terlalu penuh.
-- Gunakan bahasa yang profesional, ringkas, dan teknis namun mudah dipahami oleh klien.
-- Fokus pada fungsionalitas inti (MVP) untuk modul berlabel FASE 1.`;
+### SUB-FEATURE: [Nama Sub-Fitur 2.1]
+- **User Story:** [User Story]
+- **Acceptance Criteria:**
+  1. [Kriteria 1]
+- **Developer Tasks:**
+  - *Frontend:* [Task]
+  - *Backend:* [Task]`;
 
 const sampleParsedPRD = `# ROOT NODE: E-Commerce Marketplace Platform
 **Tujuan Utama:** Platform transaksi jual-beli online terintegrasi dengan sistem pembayaran otomatis dan manajemen pengiriman paket.
@@ -115,6 +123,7 @@ export default function PRDPage() {
   const [prdContent, setPrdContent] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [language, setLanguage] = useState('Bahasa Indonesia');
   const [isOpenLangMenu, setIsOpenLangMenu] = useState(false);
 
@@ -133,7 +142,7 @@ export default function PRDPage() {
   };
 
   const handleCopyPrompt = () => {
-    navigator.clipboard.writeText(SYSTEM_PROMPT_TEMPLATE);
+    navigator.clipboard.writeText(MASTER_PRD_CONVERTER_PROMPT);
     setCopiedPrompt(true);
     setTimeout(() => setCopiedPrompt(false), 2500);
   };
@@ -172,7 +181,7 @@ export default function PRDPage() {
           </div>
         )}
 
-        {/* Hero Title Section with Active Project Indicator */}
+        {/* Hero Title Section with Mikir flow ai Branding */}
         <div className="text-center space-y-4">
           <div className="flex justify-center mb-2">
             <Logo size="large" />
@@ -190,28 +199,39 @@ export default function PRDPage() {
 
           <p className="text-[#6B7280] text-sm sm:text-base font-normal max-w-lg mx-auto flex flex-wrap items-center justify-center gap-2">
             <span>Ubah ide atau requirement proyek kamu menjadi peta alur arsitektur Node secara otomatis.</span>
-            
-            {/* Salin Template Prompt AI Button */}
-            {!isClient && (
+          </p>
+
+          {/* Prompt AI Converter Quick Action Bar */}
+          {!isClient && (
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
               <button
                 type="button"
                 onClick={handleCopyPrompt}
-                className="inline-flex items-center gap-1.5 bg-[#FFEDD5] text-[#EA580C] hover:bg-orange-200 border border-orange-200 text-xs font-semibold px-3 py-1 rounded-full transition-all cursor-pointer shadow-2xs"
+                className="inline-flex items-center gap-1.5 bg-[#FFEDD5] text-[#EA580C] hover:bg-orange-200 border border-orange-200 text-xs font-bold px-4 py-2 rounded-full transition-all cursor-pointer shadow-2xs"
               >
                 {copiedPrompt ? (
                   <>
-                    <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    <span className="text-emerald-700 font-bold">Prompt AI Disalin!</span>
+                    <Check className="w-4 h-4 text-emerald-600" />
+                    <span className="text-emerald-700 font-bold">Prompt Konverter AI Disalin!</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Salin Template Prompt PRD 📄</span>
+                    <Copy className="w-4 h-4" />
+                    <span>Salin Prompt AI Konverter PRD Klien 🤖</span>
                   </>
                 )}
               </button>
-            )}
-          </p>
+
+              <button
+                type="button"
+                onClick={() => setShowTemplateModal(true)}
+                className="inline-flex items-center gap-1.5 bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 text-xs font-semibold px-4 py-2 rounded-full transition-all cursor-pointer shadow-2xs"
+              >
+                <FileCode className="w-4 h-4 text-gray-500" />
+                <span>Lihat Panduan Konverter PRD</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Main Central Card Form adhering strictly to design.md */}
@@ -289,6 +309,62 @@ export default function PRDPage() {
         </div>
 
       </div>
+
+      {/* Template Converter Modal */}
+      {showTemplateModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl border border-gray-200 max-w-2xl w-full p-6 md:p-8 shadow-2xl space-y-6">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-[#FF6B4D]" /> Panduan Konverter PRD Klien ke MikirFlow AI
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">Gunakan Prompt AI ini di ChatGPT / Gemini / Claude untuk mengonversi requirement mentah klien.</p>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setShowTemplateModal(false)}
+                className="text-gray-400 hover:text-gray-600 p-1.5 rounded-xl hover:bg-gray-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-xs font-bold text-gray-700">Langkah Penggunaan:</p>
+              <ol className="text-xs text-gray-600 space-y-1.5 list-decimal pl-4">
+                <li>Klik tombol **Salin Prompt AI** di bawah.</li>
+                <li>Buka ChatGPT / Claude / Gemini Anda.</li>
+                <li>Tempelkan prompt ini dan ganti bagian <code className="bg-gray-100 px-1 py-0.5 rounded text-orange-600 font-bold">{`{{PASTE_TEKS_PRD_ATAU_KEBUTUHAN_KLIEN_DI_SINI}}`}</code> dengan catatan/PRD dari Klien.</li>
+                <li>Salin teks Markdown hasil konversi AI lalu tempelkan ke kolom form PRD MikirFlow AI ini.</li>
+              </ol>
+
+              <div className="bg-gray-900 text-gray-100 rounded-2xl p-4 text-xs font-mono max-h-60 overflow-y-auto whitespace-pre-wrap border border-gray-800 leading-relaxed">
+                {MASTER_PRD_CONVERTER_PROMPT}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={handleCopyPrompt}
+                className="px-5 py-2.5 bg-[#FF6B4D] hover:bg-[#e65a3d] text-white text-xs font-bold rounded-xl cursor-pointer shadow-md transition-all flex items-center gap-2"
+              >
+                <Copy className="w-4 h-4" />
+                <span>{copiedPrompt ? 'Tersalin!' : 'Salin Prompt AI Sekarang'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowTemplateModal(false)}
+                className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl cursor-pointer transition-colors"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Page Footer (Berdikari Digital Nusantara) */}
       <footer className="pt-8 pb-2 border-t border-[#E5E7EB] mt-auto text-center space-y-3">
